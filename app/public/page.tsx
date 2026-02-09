@@ -9,7 +9,7 @@ import Link from "next/link";
 
 type PublicPost = {
   id: string;
-  user_id: string;
+  user_id: string | null;
   content: string;
   city: string | null;
   lat: number;
@@ -41,37 +41,6 @@ export default function PublicPage() {
   };
 }, []);
 
-<div className="mb-3 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
-  <label className="flex items-center gap-2 text-sm">
-    <input
-      type="checkbox"
-      checked={onlyMine}
-      onChange={(e) => setOnlyMine(e.target.checked)}
-      className="h-4 w-4"
-    />
-    Only my posts
-  </label>
-
-  <div className="flex gap-2">
-    <input
-      value={cityFilter}
-      onChange={(e) => setCityFilter(e.target.value)}
-      placeholder="Filter by city…"
-      className="w-full sm:w-64 rounded-2xl px-4 py-2 border border-[#E7D9CC] bg-white/80 outline-none focus:ring-2 focus:ring-[#D7BBAA]"
-    />
-
-    <button
-      onClick={() => {
-        setOnlyMine(false);
-        setCityFilter("");
-      }}
-      className="rounded-2xl px-4 py-2 text-sm border border-[#E7D9CC] bg-white/80 hover:bg-white"
-      title="Clear filters"
-    >
-      Clear
-    </button>
-  </div>
-</div>
 
   useEffect(() => {
     (async () => {
@@ -155,9 +124,45 @@ async function deletePublicPost(postId: string) {
 
           <div className="lg:col-span-5 rounded-[28px] bg-white/70 border border-[#E7D9CC] shadow-sm overflow-hidden">
             <div className="p-4 border-b border-[#E7D9CC] bg-white/40">
-              <div className="font-bold">Latest pins</div>
-              <div className="text-xs opacity-70">{loading ? "Loading..." : `${posts.length} posts`}</div>
-            </div>
+  <div className="font-bold">Latest pins</div>
+  <div className="text-xs opacity-70">
+    {loading ? "Loading..." : `${filteredPosts.length} of ${posts.length} posts`}
+  </div>
+
+  {/* FILTERS */}
+  <div className="mt-3 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+    <label className="flex items-center gap-2 text-sm">
+      <input
+        type="checkbox"
+        checked={onlyMine}
+        onChange={(e) => setOnlyMine(e.target.checked)}
+        className="h-4 w-4"
+      />
+      Only my posts
+    </label>
+
+    <div className="flex gap-2 w-full sm:w-auto">
+      <input
+        value={cityFilter}
+        onChange={(e) => setCityFilter(e.target.value)}
+        placeholder="Filter by city…"
+        className="w-full sm:w-64 rounded-2xl px-4 py-2 border border-[#E7D9CC] bg-white/80 outline-none focus:ring-2 focus:ring-[#D7BBAA]"
+      />
+
+      <button
+        onClick={() => {
+          setOnlyMine(false);
+          setCityFilter("");
+        }}
+        className="rounded-2xl px-4 py-2 text-sm border border-[#E7D9CC] bg-white/80 hover:bg-white"
+        title="Clear filters"
+      >
+        Clear
+      </button>
+    </div>
+  </div>
+</div>
+
 
             <div className="max-h-[70vh] overflow-auto p-3 space-y-3">
   {filteredPosts.map((p) => {
