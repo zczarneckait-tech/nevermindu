@@ -9,6 +9,7 @@ import Link from "next/link";
 
 type PublicPost = {
   id: string;
+  user_id: string;
   content: string;
   city: string | null;
   lat: number;
@@ -21,13 +22,29 @@ const MapView = dynamic(() => import("../components/_MapView"), { ssr: false });
 export default function PublicPage() {
   const [posts, setPosts] = useState<PublicPost[]>([]);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  useEffect(() => {
+  supabase.auth.getSession().then(({ data }) => {
+    setUserId(data.session?.user?.id ?? null);
+  });
+
+  const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+    setUserId(session?.user?.id ?? null);
+  });
+
+  return () => {
+    sub.subscription.unsubscribe();
+  };
+}, []);
+
 
   useEffect(() => {
     (async () => {
       setLoading(true);
       const { data, error } = await supabase
         .from("public_posts")
-        .select("*")
+        .select("id,user_id,content,city,lat,lng,created_at")
+
         .order("created_at", { ascending: false })
         .limit(300);
 
@@ -41,6 +58,24 @@ export default function PublicPage() {
     if (posts.length > 0) return [posts[0].lat, posts[0].lng];
     return [52.2297, 21.0122]; // Warsaw fallback
   }, [posts]);
+async function deletePublicPost(postId: string) {
+  const ok = window.confirm("Delete this public post?");
+  if (!ok) return;
+
+  const prev = posts;
+  setPosts((p) => p.filter((x) => x.id !== postId));
+
+  const { data, error } = await supabase
+    .from("public_posts")
+    .delete()
+    .eq("id", postId)
+    .select("id");
+
+  if (error || !data || data.length === 0) {
+    alert(error?.message ?? "Delete failed (RLS?)");
+    setPosts(prev);
+  }
+}
 
 
   return (
