@@ -3,6 +3,7 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { MapContainer, TileLayer, Marker, Popup, Tooltip } from "react-leaflet";
+import { useMemo } from "react";
 import marker2x from "leaflet/dist/images/marker-icon-2x.png";
 import marker1x from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
@@ -26,12 +27,43 @@ export default function MapView({
 }: {
   center: [number, number];
   posts: PublicPost[];
-}) {const emojiIcon = L.divIcon({
+}) {
+  const emojiIcon = L.divIcon({
   html: "📍",
   className: "",
   iconSize: [24, 24],
   iconAnchor: [12, 24],
 });
+
+// 1) grupowanie postów po lokalizacji
+const groups = useMemo(() => {
+  const map = new Map<string, PublicPost[]>();
+
+  for (const p of posts) {
+    const lat = Number(p.lat);
+    const lng = Number(p.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
+
+    // klucz "miejsce" (u Ciebie i tak zwykle 2 miejsca po przecinku)
+    const key = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+
+    const arr = map.get(key) ?? [];
+    arr.push({ ...p, lat, lng });
+    map.set(key, arr);
+  }
+
+  // zamień na tablicę grup, posortuj w każdej grupie od najnowszych
+  const out = Array.from(map.entries()).map(([key, arr]) => {
+    arr.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    return { key, lat: arr[0].lat, lng: arr[0].lng, posts: arr };
+  });
+
+  return out;
+}, [posts]);
+
 
   return (
     <MapContainer
@@ -45,45 +77,64 @@ export default function MapView({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {posts
-  .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
-  .map((p) => (
-    <Marker key={p.id} position={[p.lat, p.lng]} icon={emojiIcon}>
+      {groups.map((g) => {
+  const latest3 = g.posts.slice(0, 3);
 
-      {/* HOVER */}
-      <Tooltip direction="top" offset={[0, -10]} opacity={0.95} sticky>
-        <div style={{ maxWidth: 220 }}>
-          <div style={{ fontSize: 12, opacity: 0.75 }}>
-            {p.city ?? "Unknown city"}
+  return (
+    <Marker key={g.key} position={[g.lat, g.lng]} icon={emojiIcon}>
+      {/* HOVER – 3 ostatnie wiadomości */}
+      <Tooltip direction="top" offset={[0, -12]} opacity={0.98} sticky>
+        <div style={{ maxWidth: 260 }}>
+          <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 6 }}>
+            {latest3[0]?.city ?? "Unknown city"} · {g.posts.length} post(s)
           </div>
-          <div
-            style={{
-              fontSize: 13,
-              fontWeight: 600,
-              whiteSpace: "pre-wrap",
-            }}
-          >
-            {p.content.length > 120
-              ? p.content.slice(0, 120) + "…"
-              : p.content}
+
+          <div style={{ display: "grid", gap: 6 }}>
+            {latest3.map((p) => (
+              <div key={p.id}>
+                <div style={{ fontSize: 11, opacity: 0.7 }}>
+                  {new Date(p.created_at).toLocaleString()}
+                </div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    whiteSpace: "pre-wrap",
+                  }}
+                >
+                  {p.content.length > 120
+                    ? p.content.slice(0, 120) + "…"
+                    : p.content}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </Tooltip>
 
-      {/* KLIK */}
+      {/* KLIK – pełna lista */}
       <Popup>
-        <div style={{ maxWidth: 260 }}>
-          <div style={{ fontSize: 12, opacity: 0.75 }}>
-            {p.city ?? "Unknown city"} •{" "}
-            {new Date(p.created_at).toLocaleString()}
+        <div style={{ maxWidth: 280 }}>
+          <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 8 }}>
+            {latest3[0]?.city ?? "Unknown city"}
           </div>
-          <div style={{ marginTop: 6, whiteSpace: "pre-wrap" }}>
-            {p.content}
+
+          <div style={{ display: "grid", gap: 10 }}>
+            {g.posts.map((p) => (
+              <div key={p.id}>
+                <div style={{ fontSize: 11, opacity: 0.7 }}>
+                  {new Date(p.created_at).toLocaleString()}
+                </div>
+                <div style={{ whiteSpace: "pre-wrap" }}>{p.content}</div>
+              </div>
+            ))}
           </div>
         </div>
       </Popup>
     </Marker>
-  ))}
+  );
+})}
+
 
     </MapContainer>
   );
