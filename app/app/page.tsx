@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import Link from "next/link";
 
 type Category = { id: string; title: string; created_at: string };
 type Message = { id: string; content: string; created_at: string; category_id: string };
@@ -175,6 +176,39 @@ export default function AppPage() {
     await supabase.auth.signOut();
     window.location.href = "/auth";
   }
+  async function publishMessage(content: string) {
+  const ok = window.confirm(
+    "Publish this message to the public map?\n\nYour location will be approximate (not exact)."
+  );
+  if (!ok) return;
+
+  // geolokalizacja z przeglądarki
+  const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(resolve, reject, {
+      enableHighAccuracy: false,
+      timeout: 10000,
+    });
+  });
+
+  // zaokrąglenie dla prywatności:
+  // 2 miejsca po przecinku ~ 1 km, 1 miejsce ~ 11 km
+  const lat = Math.round(pos.coords.latitude * 100) / 100;
+  const lng = Math.round(pos.coords.longitude * 100) / 100;
+
+  const city = prompt("City name (optional):", "") || null;
+
+  const { error } = await supabase.from("public_posts").insert({
+    user_id: userId,
+    content,
+    city,
+    lat,
+    lng,
+  });
+
+  if (error) alert(error.message);
+  else alert("Published ✅");
+}
+
 
   return (
     <div className="min-h-screen bg-[#FBF6EF] text-[#2B1E16]">
@@ -198,12 +232,23 @@ export default function AppPage() {
             </div>
           </div>
 
-          <button
-            onClick={logout}
-            className="rounded-2xl px-4 py-2 text-sm border border-[#E7D9CC] bg-white/70 hover:bg-white transition shadow-sm"
-          >
-            Log out
-          </button>
+          <div className="flex items-center gap-2">
+  <Link
+    href="/public"
+    className="rounded-2xl px-4 py-2 text-sm border border-[#E7D9CC] bg-white/80 hover:bg-white"
+  >
+    Mind Map
+  </Link>
+
+  <button
+    onClick={logout}
+    className="rounded-2xl px-4 py-2 text-sm border border-[#E7D9CC]"
+  >
+    Log out
+  </button>
+</div>
+
+          
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5 relative">
@@ -297,6 +342,7 @@ export default function AppPage() {
                           >
                             🗑️
                           </button>
+                         
                         </div>
                       </li>
                     );
@@ -333,26 +379,38 @@ export default function AppPage() {
               ) : null}
 
               {messages.map((m) => (
-                <div key={m.id} className="flex justify-end group">
-                  <div className="max-w-[85%] rounded-[22px] bg-[#6B4632] text-white px-4 py-3 shadow-sm relative">
-                    <div className="text-sm whitespace-pre-wrap leading-relaxed">{m.content}</div>
-                    <div className="mt-1 text-[11px] opacity-80">
-                      {new Date(m.created_at).toLocaleString()}
-                    </div>
+  <div key={m.id} className="flex justify-end group relative pl-20">
+    <div className="max-w-[85%] rounded-[22px] bg-[#6B4632] text-white px-4 py-3 shadow-sm">
+      <div className="text-sm whitespace-pre-wrap leading-relaxed">
+        {m.content}
+      </div>
+      <div className="mt-1 text-[11px] opacity-80">
+        {new Date(m.created_at).toLocaleString()}
+      </div>
+    </div>
 
-                    {/* delete message button */}
-                    <button
-                      onClick={() => deleteMessage(m.id)}
-                      className="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition md:opacity-0 md:group-hover:opacity-100
-                                 rounded-2xl px-2 py-1 text-xs border border-[#E7D9CC] bg-white/80 text-[#2B1E16] hover:bg-white"
-                      title="Delete message"
-                      aria-label="Delete message"
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              ))}
+    {/* icons column */}
+    <div className="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+      <button
+        onClick={() => publishMessage(m.content)}
+        className="rounded-2xl px-2 py-1 text-xs border border-[#E7D9CC] bg-white/80 hover:bg-white shadow-sm"
+        title="Publish to map"
+      >
+        🌍
+      </button>
+
+      <button
+        onClick={() => deleteMessage(m.id)}
+        className="rounded-2xl px-2 py-1 text-xs border border-[#E7D9CC] bg-white/80 hover:bg-white shadow-sm"
+        title="Delete message"
+        aria-label="Delete message"
+      >
+        🗑️
+      </button>
+    </div>
+  </div>
+))}
+
 
               <div ref={bottomRef} />
             </div>

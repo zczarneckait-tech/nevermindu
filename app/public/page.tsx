@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
+import Link from "next/link";
 
 
 
@@ -41,9 +42,17 @@ export default function PublicPage() {
     return [52.2297, 21.0122]; // Warsaw fallback
   }, [posts]);
 
+
   return (
     <div className="min-h-screen bg-[#FBF6EF] text-[#2B1E16]">
       <div className="max-w-6xl mx-auto p-5">
+        <Link
+  href="/"
+  className="inline-flex mb-4 rounded-2xl px-4 py-2 text-sm border border-[#E7D9CC] bg-white/80 hover:bg-white"
+>
+  ← Back to chats
+</Link>
+
         <div className="mb-4">
           <h1 className="text-2xl font-bold">Public map</h1>
           <p className="text-sm opacity-80">
