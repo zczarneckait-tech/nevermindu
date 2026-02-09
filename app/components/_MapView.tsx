@@ -24,13 +24,20 @@ L.Icon.Default.mergeOptions({
 });
 
 
+
 export default function MapView({
   center,
   posts,
 }: {
   center: [number, number];
   posts: PublicPost[];
-}) {
+}) {const emojiIcon = L.divIcon({
+  html: "📍",
+  className: "",
+  iconSize: [24, 24],
+  iconAnchor: [12, 24],
+});
+
   return (
     <MapContainer
       center={center}
@@ -46,7 +53,8 @@ export default function MapView({
       {posts
   .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng))
   .map((p) => (
-    <Marker key={p.id} position={[p.lat, p.lng]}>
+    <Marker key={p.id} position={[p.lat, p.lng]} icon={emojiIcon}>
+
       {/* HOVER */}
       <Tooltip direction="top" offset={[0, -10]} opacity={0.95} sticky>
         <div style={{ maxWidth: 220 }}>
