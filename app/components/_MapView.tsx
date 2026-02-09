@@ -82,6 +82,34 @@ const groups = useMemo(() => {
 
   return (
     <Marker key={g.key} position={[g.lat, g.lng]} icon={emojiIcon}>
+      <Tooltip direction="top" offset={[0, -12]} opacity={0.98} sticky>
+  <div style={{ maxWidth: 260 }}>
+    <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 8 }}>
+      {latest3[0]?.city ?? "Unknown city"} • {g.posts.length} post(s)
+    </div>
+
+    <div style={{ display: "grid", gap: 8 }}>
+      {latest3.map((p) => (
+        <div
+          key={p.id}
+          style={{
+            paddingTop: 6,
+            borderTop: "1px solid rgba(0,0,0,0.10)",
+          }}
+        >
+          <div style={{ fontSize: 11, opacity: 0.7 }}>
+            {new Date(p.created_at).toLocaleString()}
+          </div>
+
+          <div style={{ fontSize: 13, fontWeight: 600, whiteSpace: "pre-wrap" }}>
+            {p.content.length > 120 ? p.content.slice(0, 120) + "…" : p.content}
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+</Tooltip>
+
       {/* HOVER – 3 ostatnie wiadomości */}
       <Tooltip direction="top" offset={[0, -12]} opacity={0.98} sticky>
         <div style={{ maxWidth: 260 }}>
