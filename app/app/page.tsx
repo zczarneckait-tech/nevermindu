@@ -11,10 +11,13 @@ export default function AppPage() {
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
-
   const [messages, setMessages] = useState<Message[]>([]);
+
   const [newCategoryTitle, setNewCategoryTitle] = useState("");
   const [draft, setDraft] = useState("");
+
+  // Messenger-like sidebar toggle
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -50,13 +53,11 @@ export default function AppPage() {
         .select("*")
         .order("created_at", { ascending: true });
 
-      if (!error && data) {
-        const cats = data as Category[];
-        setCategories(cats);
-        if (cats.length > 0) setActiveCategoryId(cats[0].id);
-      } else if (error) {
-        alert(error.message);
-      }
+      if (error) return alert(error.message);
+
+      const cats = (data ?? []) as Category[];
+      setCategories(cats);
+      if (cats.length > 0) setActiveCategoryId((prev) => prev ?? cats[0].id);
     })();
   }, [userId]);
 
@@ -72,8 +73,8 @@ export default function AppPage() {
         .eq("category_id", activeCategoryId)
         .order("created_at", { ascending: true });
 
-      if (!error && data) setMessages(data as Message[]);
-      else if (error) alert(error.message);
+      if (error) return alert(error.message);
+      setMessages((data ?? []) as Message[]);
     })();
   }, [userId, activeCategoryId]);
 
@@ -97,6 +98,31 @@ export default function AppPage() {
     setCategories((prev) => [...prev, c]);
     setNewCategoryTitle("");
     setActiveCategoryId(c.id);
+    setSidebarOpen(false); // nice on mobile
+  }
+
+  async function deleteCategory(categoryId: string) {
+    const c = categories.find((x) => x.id === categoryId);
+    const ok = window.confirm(`Delete this chat/category:\n"${c?.title ?? "Untitled"}"?\n\nThis will also delete all messages inside.`);
+    if (!ok) return;
+
+    // Optimistic UI
+    const prevCategories = categories;
+    const prevActive = activeCategoryId;
+    setCategories((prev) => prev.filter((x) => x.id !== categoryId));
+    if (prevActive === categoryId) {
+      const remaining = prevCategories.filter((x) => x.id !== categoryId);
+      setActiveCategoryId(remaining[0]?.id ?? null);
+      setMessages([]);
+    }
+
+    const { error } = await supabase.from("categories").delete().eq("id", categoryId);
+    if (error) {
+      alert(error.message);
+      // rollback
+      setCategories(prevCategories);
+      setActiveCategoryId(prevActive);
+    }
   }
 
   async function sendFake() {
@@ -131,6 +157,20 @@ export default function AppPage() {
     });
   }
 
+  async function deleteMessage(messageId: string) {
+    const ok = window.confirm("Delete this message?");
+    if (!ok) return;
+
+    const prev = messages;
+    setMessages((p) => p.filter((m) => m.id !== messageId));
+
+    const { error } = await supabase.from("messages").delete().eq("id", messageId);
+    if (error) {
+      alert(error.message);
+      setMessages(prev); // rollback
+    }
+  }
+
   async function logout() {
     await supabase.auth.signOut();
     window.location.href = "/auth";
@@ -139,10 +179,23 @@ export default function AppPage() {
   return (
     <div className="min-h-screen bg-[#FBF6EF] text-[#2B1E16]">
       <div className="max-w-6xl mx-auto p-5">
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">Your emotional chats</h1>
-            <p className="text-sm opacity-80">Write. “Send”. Come back whenever you want</p>
+        {/* Header */}
+        <div className="mb-5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {/* Sidebar toggle (mobile) */}
+            <button
+              onClick={() => setSidebarOpen((v) => !v)}
+              className="md:hidden rounded-2xl px-3 py-2 border border-[#E7D9CC] bg-white/70 hover:bg-white transition shadow-sm"
+              aria-label="Toggle chats"
+              title="Chats"
+            >
+              ☰
+            </button>
+
+            <div>
+              <h1 className="text-2xl font-bold">Your emotional chats</h1>
+              <p className="text-sm opacity-80">Write. “Send”. Come back whenever you want.</p>
+            </div>
           </div>
 
           <button
@@ -153,11 +206,39 @@ export default function AppPage() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
-          {/* LEFT: categories */}
-          <aside className="md:col-span-4 rounded-[28px] bg-white/70 border border-[#E7D9CC] shadow-sm overflow-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-5 relative">
+          {/* Mobile overlay */}
+          {sidebarOpen && (
+            <button
+              className="md:hidden fixed inset-0 bg-black/20 z-30"
+              onClick={() => setSidebarOpen(false)}
+              aria-label="Close sidebar overlay"
+            />
+          )}
+
+          {/* Sidebar */}
+          <aside
+            className={[
+              "md:col-span-4 rounded-[28px] bg-white/70 border border-[#E7D9CC] shadow-sm overflow-hidden z-40",
+              // mobile slide-in
+              "md:static md:translate-x-0 md:opacity-100 md:pointer-events-auto",
+              "fixed top-0 left-0 h-full w-[86%] max-w-sm p-0",
+              sidebarOpen ? "translate-x-0 opacity-100" : "-translate-x-[110%] opacity-100",
+              "transition-transform duration-200",
+            ].join(" ")}
+          >
             <div className="p-4 border-b border-[#E7D9CC] bg-white/40">
-              <div className="flex gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <div className="font-bold">Chats</div>
+                <button
+                  className="md:hidden rounded-2xl px-3 py-1.5 border border-[#E7D9CC] bg-white/70 hover:bg-white transition"
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="flex gap-2 mt-3">
                 <input
                   className="flex-1 rounded-2xl px-4 py-2 border border-[#E7D9CC] bg-white outline-none focus:ring-2 focus:ring-[#D7BBAA]"
                   placeholder="New category (e.g. longing)"
@@ -175,28 +256,48 @@ export default function AppPage() {
               </div>
             </div>
 
-            <div className="max-h-[70vh] overflow-auto">
+            <div className="max-h-[calc(100vh-140px)] md:max-h-[70vh] overflow-auto p-2">
               {categories.length === 0 ? (
-                <div className="p-4 text-sm opacity-80">
-                  Write your first message. No one receives it — this space is yours...
+                <div className="p-3 text-sm opacity-80">
+                  Create your first category — this will be your first “chat”.
                 </div>
               ) : (
-                <ul className="p-2">
+                <ul>
                   {categories.map((c) => {
                     const active = c.id === activeCategoryId;
                     return (
                       <li key={c.id} className="mb-2">
-                        <button
-                          onClick={() => setActiveCategoryId(c.id)}
-                          className={`w-full text-left px-4 py-3 rounded-2xl border transition ${
+                        <div
+                          className={[
+                            "w-full px-4 py-3 rounded-2xl border transition flex items-start justify-between gap-3",
                             active
                               ? "bg-[#F3E7DD] border-[#D7BBAA]"
-                              : "bg-white/60 border-[#E7D9CC] hover:bg-white"
-                          }`}
+                              : "bg-white/60 border-[#E7D9CC] hover:bg-white",
+                          ].join(" ")}
                         >
-                          <div className="font-bold">{c.title}</div>
-                          <div className="text-xs opacity-70">Your space for words</div>
-                        </button>
+                          <button
+                            onClick={() => {
+                              setActiveCategoryId(c.id);
+                              setSidebarOpen(false);
+                            }}
+                            className="text-left flex-1"
+                          >
+                            <div className="font-bold">{c.title}</div>
+                            <div className="text-xs opacity-70">Your space for words.</div>
+                          </button>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteCategory(c.id);
+                            }}
+                            className="shrink-0 rounded-2xl px-3 py-1.5 text-sm border border-[#E7D9CC] bg-white/70 hover:bg-white transition"
+                            title="Delete chat"
+                            aria-label="Delete chat"
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       </li>
                     );
                   })}
@@ -205,27 +306,50 @@ export default function AppPage() {
             </div>
           </aside>
 
-          {/* RIGHT: chat */}
+          {/* Chat */}
           <main className="md:col-span-8 rounded-[28px] bg-white/70 border border-[#E7D9CC] shadow-sm flex flex-col overflow-hidden">
-            <div className="p-4 border-b border-[#E7D9CC] bg-white/40">
-              <div className="text-sm opacity-70">Chat</div>
-              <div className="text-xl font-bold">{activeCategory ? activeCategory.title : "Choose a category"}</div>
+            <div className="p-4 border-b border-[#E7D9CC] bg-white/40 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm opacity-70">Chat</div>
+                <div className="text-xl font-bold">
+                  {activeCategory ? activeCategory.title : "Choose a category"}
+                </div>
+              </div>
+
+              {/* Quick open chats button (desktop optional, but nice) */}
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="md:hidden rounded-2xl px-3 py-2 text-sm border border-[#E7D9CC] bg-white/70 hover:bg-white transition"
+              >
+                Chats
+              </button>
             </div>
 
             <div className="flex-1 p-4 overflow-auto space-y-3">
               {activeCategoryId && messages.length === 0 ? (
                 <div className="text-sm opacity-80">
-                  Write your first message. No one receives it — this space is yours...
+                  Write your first message. No one receives it — this space is yours.
                 </div>
               ) : null}
 
               {messages.map((m) => (
-                <div key={m.id} className="flex justify-end">
-                  <div className="max-w-[85%] rounded-[22px] bg-[#6B4632] text-white px-4 py-3 shadow-sm">
+                <div key={m.id} className="flex justify-end group">
+                  <div className="max-w-[85%] rounded-[22px] bg-[#6B4632] text-white px-4 py-3 shadow-sm relative">
                     <div className="text-sm whitespace-pre-wrap leading-relaxed">{m.content}</div>
                     <div className="mt-1 text-[11px] opacity-80">
                       {new Date(m.created_at).toLocaleString()}
                     </div>
+
+                    {/* delete message button */}
+                    <button
+                      onClick={() => deleteMessage(m.id)}
+                      className="absolute -left-10 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition md:opacity-0 md:group-hover:opacity-100
+                                 rounded-2xl px-2 py-1 text-xs border border-[#E7D9CC] bg-white/80 text-[#2B1E16] hover:bg-white"
+                      title="Delete message"
+                      aria-label="Delete message"
+                    >
+                      🗑️
+                    </button>
                   </div>
                 </div>
               ))}
@@ -254,12 +378,10 @@ export default function AppPage() {
                   className="rounded-2xl px-5 py-3 bg-[#6B4632] text-white hover:bg-[#5A3B2A] transition disabled:opacity-60 shadow-sm"
                   title="Send (just for you)"
                 >
-                  Wyślij
+                  Send
                 </button>
               </div>
-              <div className="mt-2 text-xs opacity-70">
-                Enter = send • Shift+Enter = new line
-              </div>
+              <div className="mt-2 text-xs opacity-70">Enter = send • Shift+Enter = new line</div>
             </div>
           </main>
         </div>
