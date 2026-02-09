@@ -23,6 +23,9 @@ export default function PublicPage() {
   const [posts, setPosts] = useState<PublicPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [onlyMine, setOnlyMine] = useState(false);
+  const [cityFilter, setCityFilter] = useState("");
+
   useEffect(() => {
   supabase.auth.getSession().then(({ data }) => {
     setUserId(data.session?.user?.id ?? null);
@@ -32,11 +35,43 @@ export default function PublicPage() {
     setUserId(session?.user?.id ?? null);
   });
 
+
   return () => {
     sub.subscription.unsubscribe();
   };
 }, []);
 
+<div className="mb-3 flex flex-col sm:flex-row gap-2 sm:items-center sm:justify-between">
+  <label className="flex items-center gap-2 text-sm">
+    <input
+      type="checkbox"
+      checked={onlyMine}
+      onChange={(e) => setOnlyMine(e.target.checked)}
+      className="h-4 w-4"
+    />
+    Only my posts
+  </label>
+
+  <div className="flex gap-2">
+    <input
+      value={cityFilter}
+      onChange={(e) => setCityFilter(e.target.value)}
+      placeholder="Filter by city…"
+      className="w-full sm:w-64 rounded-2xl px-4 py-2 border border-[#E7D9CC] bg-white/80 outline-none focus:ring-2 focus:ring-[#D7BBAA]"
+    />
+
+    <button
+      onClick={() => {
+        setOnlyMine(false);
+        setCityFilter("");
+      }}
+      className="rounded-2xl px-4 py-2 text-sm border border-[#E7D9CC] bg-white/80 hover:bg-white"
+      title="Clear filters"
+    >
+      Clear
+    </button>
+  </div>
+</div>
 
   useEffect(() => {
     (async () => {
@@ -76,6 +111,24 @@ async function deletePublicPost(postId: string) {
     setPosts(prev);
   }
 }
+  const filteredPosts = useMemo(() => {
+  const cityQ = cityFilter.trim().toLowerCase();
+
+  return posts.filter((p) => {
+    if (onlyMine) {
+      if (!userId) return false; // gdy nie zalogowana, "only mine" pokaże 0
+      if (p.user_id !== userId) return false;
+    }
+
+    if (cityQ) {
+      const city = (p.city ?? "").toLowerCase();
+      if (!city.includes(cityQ)) return false;
+    }
+
+    return true;
+  });
+}, [posts, onlyMine, cityFilter, userId]);
+
 
 
   return (
@@ -107,7 +160,7 @@ async function deletePublicPost(postId: string) {
             </div>
 
             <div className="max-h-[70vh] overflow-auto p-3 space-y-3">
-              {posts.map((p) => {
+              {filteredPosts.map((p) => {
   const isMine = userId && p.user_id === userId;
 
   return (
