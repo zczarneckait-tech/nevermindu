@@ -17,11 +17,6 @@ type PublicPost = {
   created_at: string;
 };
 
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: marker2x.src,
-  iconUrl: marker1x.src,
-  shadowUrl: markerShadow.src,
-});
 
 
 
