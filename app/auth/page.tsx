@@ -44,7 +44,7 @@ export default function AuthPage() {
       <div style={{ width: "100%", maxWidth: 420, border: "1px solid #ddd", borderRadius: 16, padding: 20 }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>nevermind</h1>
         <p style={{ marginTop: 0, marginBottom: 16, color: "#555" }}>
-          Rejestracja i logowanie (Supabase).
+          Sign up & log in
         </p>
 
         <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
@@ -61,7 +61,7 @@ export default function AuthPage() {
               cursor: "pointer",
             }}
           >
-            Rejestracja
+            Sign up
           </button>
           <button
             type="button"
@@ -76,7 +76,7 @@ export default function AuthPage() {
               cursor: "pointer",
             }}
           >
-            Logowanie
+            Sign in 
           </button>
         </div>
 
@@ -90,7 +90,7 @@ export default function AuthPage() {
             style={{ padding: 10, borderRadius: 12, border: "1px solid #ddd" }}
           />
           <input
-            placeholder="hasło (min. 8 znaków)"
+            placeholder="password (min. 8 characters)"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             type="password"
@@ -110,7 +110,7 @@ export default function AuthPage() {
               opacity: loading ? 0.7 : 1,
             }}
           >
-            {loading ? "Chwila..." : mode === "signup" ? "Załóż konto" : "Zaloguj się"}
+            {loading ? "Chwila..." : mode === "signup" ? "Create account" : "Sign in"}
           </button>
         </form>
 

@@ -141,15 +141,15 @@ export default function AppPage() {
       <div className="max-w-6xl mx-auto p-5">
         <div className="mb-5 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Twoje czaty z uczuciami</h1>
-            <p className="text-sm opacity-80">Pisz, “wyślij”, wracaj kiedy chcesz.</p>
+            <h1 className="text-2xl font-bold">Your emotional chats</h1>
+            <p className="text-sm opacity-80">Write. “Send”. Come back whenever you want</p>
           </div>
 
           <button
             onClick={logout}
             className="rounded-2xl px-4 py-2 text-sm border border-[#E7D9CC] bg-white/70 hover:bg-white transition shadow-sm"
           >
-            Wyloguj
+            Log out
           </button>
         </div>
 
@@ -160,7 +160,7 @@ export default function AppPage() {
               <div className="flex gap-2">
                 <input
                   className="flex-1 rounded-2xl px-4 py-2 border border-[#E7D9CC] bg-white outline-none focus:ring-2 focus:ring-[#D7BBAA]"
-                  placeholder="Nowa kategoria (np. tęsknota)"
+                  placeholder="New category (e.g. longing)"
                   value={newCategoryTitle}
                   onChange={(e) => setNewCategoryTitle(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && addCategory()}
@@ -168,7 +168,7 @@ export default function AppPage() {
                 <button
                   className="rounded-2xl px-4 py-2 bg-[#6B4632] text-white hover:bg-[#5A3B2A] transition shadow-sm"
                   onClick={addCategory}
-                  title="Dodaj"
+                  title="Add"
                 >
                   +
                 </button>
@@ -178,7 +178,7 @@ export default function AppPage() {
             <div className="max-h-[70vh] overflow-auto">
               {categories.length === 0 ? (
                 <div className="p-4 text-sm opacity-80">
-                  Zrób pierwszą kategorię (to będzie Twój pierwszy “czat”).
+                  Write your first message. No one receives it — this space is yours...
                 </div>
               ) : (
                 <ul className="p-2">
@@ -195,7 +195,7 @@ export default function AppPage() {
                           }`}
                         >
                           <div className="font-bold">{c.title}</div>
-                          <div className="text-xs opacity-70">Twoje miejsce na słowa.</div>
+                          <div className="text-xs opacity-70">Your space for words</div>
                         </button>
                       </li>
                     );
@@ -208,14 +208,14 @@ export default function AppPage() {
           {/* RIGHT: chat */}
           <main className="md:col-span-8 rounded-[28px] bg-white/70 border border-[#E7D9CC] shadow-sm flex flex-col overflow-hidden">
             <div className="p-4 border-b border-[#E7D9CC] bg-white/40">
-              <div className="text-sm opacity-70">Czat</div>
-              <div className="text-xl font-bold">{activeCategory ? activeCategory.title : "Wybierz kategorię"}</div>
+              <div className="text-sm opacity-70">Chat</div>
+              <div className="text-xl font-bold">{activeCategory ? activeCategory.title : "Choose a category"}</div>
             </div>
 
             <div className="flex-1 p-4 overflow-auto space-y-3">
               {activeCategoryId && messages.length === 0 ? (
                 <div className="text-sm opacity-80">
-                  Napisz pierwszą wiadomość. Nikt jej nie dostaje — to Twoja przestrzeń.
+                  Write your first message. No one receives it — this space is yours...
                 </div>
               ) : null}
 
@@ -237,7 +237,7 @@ export default function AppPage() {
               <div className="flex gap-3 items-end">
                 <textarea
                   className="flex-1 resize-none rounded-2xl px-4 py-3 border border-[#E7D9CC] bg-white outline-none focus:ring-2 focus:ring-[#D7BBAA] min-h-[52px] max-h-[160px]"
-                  placeholder="Napisz wiadomość..."
+                  placeholder="Write a message..."
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   onKeyDown={(e) => {
@@ -252,13 +252,13 @@ export default function AppPage() {
                   onClick={sendFake}
                   disabled={!activeCategoryId}
                   className="rounded-2xl px-5 py-3 bg-[#6B4632] text-white hover:bg-[#5A3B2A] transition disabled:opacity-60 shadow-sm"
-                  title="Wyślij na niby"
+                  title="Send (just for you)"
                 >
                   Wyślij
                 </button>
               </div>
               <div className="mt-2 text-xs opacity-70">
-                Enter = wyślij • Shift+Enter = nowa linia
+                Enter = send • Shift+Enter = new line
               </div>
             </div>
           </main>
