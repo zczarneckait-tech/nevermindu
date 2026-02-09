@@ -22,3 +22,58 @@ body {
   letter-spacing: 0.01em;
 
 }
+/* --- Nevermind map tooltip: incoming chat style --- */
+.leaflet-tooltip.nm-tooltip {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+.leaflet-tooltip.nm-tooltip::before {
+  display: none !important;
+}
+
+.nm-thread {
+  display: grid;
+  gap: 10px;
+  padding: 6px 4px;
+  max-width: 320px;
+}
+
+.nm-bubble {
+  align-self: flex-start; /* LEWA STRONA */
+  background: #fff7ef; /* jasny beż */
+  color: #2b1e16;
+  border-radius: 18px 18px 18px 4px; /* lekki „ogon” */
+  padding: 10px 12px;
+  border: 1px solid #e7d9cc;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+
+.nm-text {
+  font-size: 13px;
+  line-height: 1.35;
+  white-space: pre-wrap;
+}
+
+.nm-meta {
+  margin-top: 6px;
+  font-size: 11px;
+  opacity: 0.65;
+}
+.nm-bubble {
+  animation: fadeUp 0.15s ease-out;
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+

@@ -84,34 +84,19 @@ const groups = useMemo(() => {
     <Marker key={g.key} position={[g.lat, g.lng]} icon={emojiIcon}>
 
       {/* HOVER – 3 ostatnie wiadomości */}
-      <Tooltip direction="top" offset={[0, -12]} opacity={0.98} sticky>
-        <div style={{ maxWidth: 260 }}>
-          <div style={{ fontSize: 12, opacity: 0.75, marginBottom: 6 }}>
-            {latest3[0]?.city ?? "Unknown city"} · {g.posts.length} post(s)
-          </div>
-
-          <div style={{ display: "grid", gap: 6 }}>
-            {latest3.map((p) => (
-              <div key={p.id}>
-                <div style={{ fontSize: 11, opacity: 0.7 }}>
-                  {new Date(p.created_at).toLocaleString()}
-                </div>
-                <div
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 600,
-                    whiteSpace: "pre-wrap",
-                  }}
-                >
-                  {p.content.length > 120
-                    ? p.content.slice(0, 120) + "…"
-                    : p.content}
-                </div>
-              </div>
-            ))}
-          </div>
+      <Tooltip direction="top" offset={[0, -12]} opacity={1} sticky className="nm-tooltip">
+  <div className="nm-thread">
+    {latest3.map((p) => (
+      <div key={p.id} className="nm-bubble">
+        <div className="nm-text">{p.content}</div>
+        <div className="nm-meta">
+          {new Date(p.created_at).toLocaleString()}
         </div>
-      </Tooltip>
+      </div>
+    ))}
+  </div>
+</Tooltip>
+
 
       {/* KLIK – pełna lista */}
       <Popup>
