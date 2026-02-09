@@ -107,12 +107,39 @@ async function deletePublicPost(postId: string) {
             </div>
 
             <div className="max-h-[70vh] overflow-auto p-3 space-y-3">
-              {posts.map((p) => (
-                <div key={p.id} className="rounded-2xl border border-[#E7D9CC] bg-white/60 p-3">
-                  <div className="text-xs opacity-70">{p.city ?? "Unknown city"} • {new Date(p.created_at).toLocaleString()}</div>
-                  <div className="mt-1 text-sm whitespace-pre-wrap leading-relaxed">{p.content}</div>
-                </div>
-              ))}
+              {posts.map((p) => {
+  const isMine = userId && p.user_id === userId;
+
+  return (
+    <div
+      key={p.id}
+      className="rounded-2xl border border-[#E7D9CC] bg-white/60 p-3 flex justify-between gap-3"
+    >
+      <div className="min-w-0">
+        <div className="text-xs opacity-70">
+          {p.city ?? "Unknown city"} · {new Date(p.created_at).toLocaleString()}
+          {isMine && <span className="font-bold"> · yours</span>}
+        </div>
+
+        <div className="mt-1 text-sm whitespace-pre-wrap leading-relaxed">
+          {p.content}
+        </div>
+      </div>
+
+      {isMine && (
+        <button
+          onClick={() => deletePublicPost(p.id)}
+          className="shrink-0 rounded-xl px-3 py-2 text-sm border border-[#E7D9CC] bg-white/80 hover:bg-white"
+          title="Delete your post"
+          aria-label="Delete your post"
+        >
+          🗑️
+        </button>
+      )}
+    </div>
+  );
+})}
+
 
               {!loading && posts.length === 0 && (
                 <div className="p-3 text-sm opacity-80">
