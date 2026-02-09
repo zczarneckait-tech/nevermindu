@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { supabase } from "@/lib/supabase";
 
+
+
 type PublicPost = {
   id: string;
   content: string;
@@ -13,7 +15,7 @@ type PublicPost = {
   created_at: string;
 };
 
-const MapView = dynamic(() => import("./_MapView"), { ssr: false });
+const MapView = dynamic(() => import("../components/_MapView"), { ssr: false });
 
 export default function PublicPage() {
   const [posts, setPosts] = useState<PublicPost[]>([]);
