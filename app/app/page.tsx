@@ -5,7 +5,12 @@ import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
 type Category = { id: string; title: string; created_at: string };
-type Message = { id: string; content: string; created_at: string; category_id: string };
+type Message = {
+  id: string;
+  content: string;
+  created_at: string;
+  category_id: string;
+};
 
 export default function AppPage() {
   const [userId, setUserId] = useState<string | null>(null);
@@ -104,12 +109,15 @@ export default function AppPage() {
 
   async function deleteCategory(categoryId: string) {
     const c = categories.find((x) => x.id === categoryId);
-    const ok = window.confirm(`Delete this chat/category:\n"${c?.title ?? "Untitled"}"?\n\nThis will also delete all messages inside.`);
+    const ok = window.confirm(
+      `Delete this chat/category:\n"${c?.title ?? "Untitled"}"?\n\nThis will also delete all messages inside.`
+    );
     if (!ok) return;
 
     // Optimistic UI
     const prevCategories = categories;
     const prevActive = activeCategoryId;
+
     setCategories((prev) => prev.filter((x) => x.id !== categoryId));
     if (prevActive === categoryId) {
       const remaining = prevCategories.filter((x) => x.id !== categoryId);
@@ -117,7 +125,11 @@ export default function AppPage() {
       setMessages([]);
     }
 
-    const { error } = await supabase.from("categories").delete().eq("id", categoryId);
+    const { error } = await supabase
+      .from("categories")
+      .delete()
+      .eq("id", categoryId);
+
     if (error) {
       alert(error.message);
       // rollback
@@ -176,39 +188,49 @@ export default function AppPage() {
     await supabase.auth.signOut();
     window.location.href = "/auth";
   }
-  async function publishMessage(content: string) {
-  const ok = window.confirm(
-    "Publish this message to the public map?\n\nYour location will be approximate (not exact)."
-  );
-  if (!ok) return;
 
-  // geolokalizacja z przeglądarki
-  const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: false,
-      timeout: 10000,
+  async function publishMessage(messageId: string, content: string) {
+    const ok = window.confirm(
+      "Publish this message to the public map?\nYour location will be approximate (not exact)."
+    );
+    if (!ok) return;
+
+    // geolokalizacja z przeglądarki
+    const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: false,
+        timeout: 10000,
+      });
     });
-  });
 
-  // zaokrąglenie dla prywatności:
-  // 2 miejsca po przecinku ~ 1 km, 1 miejsce ~ 11 km
-  const lat = Math.round(pos.coords.latitude * 100) / 100;
-  const lng = Math.round(pos.coords.longitude * 100) / 100;
+    // zaokrąglenie (prywatność)
+    const lat = Math.round(pos.coords.latitude * 100) / 100;
+    const lng = Math.round(pos.coords.longitude * 100) / 100;
 
-  const city = prompt("City name (optional):", "") || null;
+    const city = prompt("City name (optional):") || null;
 
-  const { error } = await supabase.from("public_posts").insert({
-    user_id: userId,
-    content,
-    city,
-    lat,
-    lng,
-  });
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
 
-  if (error) alert(error.message);
-  else alert("Published ✅");
-}
+    const uid = session?.user?.id;
+    if (!uid) return;
 
+    const { error } = await supabase.from("public_posts").insert({
+      message_id: messageId, // 🔑 KLUCZOWE POWIĄZANIE
+      user_id: uid,
+      content,
+      city,
+      lat,
+      lng,
+    });
+
+    if (error) {
+      alert(error.message);
+    } else {
+      alert("Published 🌍");
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#FBF6EF] text-[#2B1E16]">
@@ -228,27 +250,27 @@ export default function AppPage() {
 
             <div>
               <h1 className="text-2xl font-bold">Your emotional chats</h1>
-              <p className="text-sm opacity-80">Write. “Send”. Come back whenever you want.</p>
+              <p className="text-sm opacity-80">
+                Write. “Send”. Come back whenever you want.
+              </p>
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-  <Link
-    href="/public"
-    className="rounded-2xl px-4 py-2 text-sm border border-[#E7D9CC] bg-white/80 hover:bg-white"
-  >
-    Mind Map
-  </Link>
+            <Link
+              href="/public"
+              className="rounded-2xl px-4 py-2 text-sm border border-[#E7D9CC] bg-white/80 hover:bg-white"
+            >
+              Mind Map
+            </Link>
 
-  <button
-    onClick={logout}
-    className="rounded-2xl px-4 py-2 text-sm border border-[#E7D9CC]"
-  >
-    Log out
-  </button>
-</div>
-
-          
+            <button
+              onClick={logout}
+              className="rounded-2xl px-4 py-2 text-sm border border-[#E7D9CC]"
+            >
+              Log out
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5 relative">
@@ -342,7 +364,6 @@ export default function AppPage() {
                           >
                             🗑️
                           </button>
-                         
                         </div>
                       </li>
                     );
@@ -362,7 +383,6 @@ export default function AppPage() {
                 </div>
               </div>
 
-              {/* Quick open chats button (desktop optional, but nice) */}
               <button
                 onClick={() => setSidebarOpen(true)}
                 className="md:hidden rounded-2xl px-3 py-2 text-sm border border-[#E7D9CC] bg-white/70 hover:bg-white transition"
@@ -379,38 +399,37 @@ export default function AppPage() {
               ) : null}
 
               {messages.map((m) => (
-  <div key={m.id} className="flex justify-end group relative pl-20">
-    <div className="max-w-[85%] rounded-[22px] bg-[#6B4632] text-white px-4 py-3 shadow-sm">
-      <div className="text-sm whitespace-pre-wrap leading-relaxed">
-        {m.content}
-      </div>
-      <div className="mt-1 text-[11px] opacity-80">
-        {new Date(m.created_at).toLocaleString()}
-      </div>
-    </div>
+                <div key={m.id} className="flex justify-end group relative pl-20">
+                  <div className="max-w-[85%] rounded-[22px] bg-[#6B4632] text-white px-4 py-3 shadow-sm">
+                    <div className="text-sm whitespace-pre-wrap leading-relaxed">
+                      {m.content}
+                    </div>
+                    <div className="mt-1 text-[11px] opacity-80">
+                      {new Date(m.created_at).toLocaleString()}
+                    </div>
+                  </div>
 
-    {/* icons column */}
-    <div className="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-      <button
-        onClick={() => publishMessage(m.content)}
-        className="rounded-2xl px-2 py-1 text-xs border border-[#E7D9CC] bg-white/80 hover:bg-white shadow-sm"
-        title="Publish to map"
-      >
-        🌍
-      </button>
+                  {/* icons column */}
+                  <div className="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <button
+                      onClick={() => publishMessage(m.id, m.content)}
+                      className="rounded-2xl px-2 py-1 text-xs border border-[#E7D9CC] bg-white/80 hover:bg-white shadow-sm"
+                      title="Publish to map"
+                    >
+                      🌍
+                    </button>
 
-      <button
-        onClick={() => deleteMessage(m.id)}
-        className="rounded-2xl px-2 py-1 text-xs border border-[#E7D9CC] bg-white/80 hover:bg-white shadow-sm"
-        title="Delete message"
-        aria-label="Delete message"
-      >
-        🗑️
-      </button>
-    </div>
-  </div>
-))}
-
+                    <button
+                      onClick={() => deleteMessage(m.id)}
+                      className="rounded-2xl px-2 py-1 text-xs border border-[#E7D9CC] bg-white/80 hover:bg-white shadow-sm"
+                      title="Delete message"
+                      aria-label="Delete message"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              ))}
 
               <div ref={bottomRef} />
             </div>
@@ -439,7 +458,10 @@ export default function AppPage() {
                   Send
                 </button>
               </div>
-              <div className="mt-2 text-xs opacity-70">Enter = send • Shift+Enter = new line</div>
+
+              <div className="mt-2 text-xs opacity-70">
+                Enter = send • Shift+Enter = new line
+              </div>
             </div>
           </main>
         </div>
