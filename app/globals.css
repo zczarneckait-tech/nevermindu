@@ -28,6 +28,7 @@ body {
   border: none !important;
   box-shadow: none !important;
   padding: 0 !important;
+  z-index: 9999;
 }
 
 .leaflet-tooltip.nm-tooltip::before {

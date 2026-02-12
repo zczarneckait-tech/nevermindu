@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
+import { useNearbySimilarNotifications } from "@/lib/useNearbySimilarNotifications";
+
 
 type Category = { id: string; title: string; created_at: string };
 type Message = {
@@ -41,6 +43,11 @@ export default function AppPage() {
       }
       setUserId(uid);
     });
+  useNearbySimilarNotifications(userId, (n) => {
+  const km = Math.round(n.distance_km);
+  alert(`Someone ${km} km from you feels the same.\n\n"${n.preview}"`);
+});
+
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) window.location.href = "/auth";
