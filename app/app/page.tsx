@@ -43,10 +43,10 @@ export default function AppPage() {
       }
       setUserId(uid);
     });
+    
   useNearbySimilarNotifications(userId, (n) => {
-  const km = Math.round(n.distance_km);
-  alert(`Someone ${km} km from you feels the same.\n\n"${n.preview}"`);
-});
+  console.log("NEW NOTIFICATION:", n);});
+
 
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {

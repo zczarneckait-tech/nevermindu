@@ -18,26 +18,41 @@ export function useNearbySimilarNotifications(
   onNotify: (n: NotificationRow) => void
 ) {
   useEffect(() => {
+    // ✅ guard: only run in browser
+    if (typeof window === "undefined") return;
     if (!userId) return;
 
-    const channel = supabase
-      .channel("notifications-live")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `recipient_user_id=eq.${userId}`,
-        },
-        (payload) => {
-          onNotify(payload.new as NotificationRow);
-        }
-      )
-      .subscribe();
+    let active = true;
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    try {
+      const channel = supabase
+        .channel(`notifications-live-${userId}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "INSERT",
+            schema: "public",
+            table: "notifications",
+            filter: `recipient_user_id=eq.${userId}`,
+          },
+          (payload) => {
+            if (!active) return;
+            onNotify(payload.new as NotificationRow);
+          }
+        )
+        .subscribe((status) => {
+          // helpful for debugging
+          // console.log("Realtime status:", status);
+        });
+
+      return () => {
+        active = false;
+        supabase.removeChannel(channel);
+      };
+    } catch (e) {
+      // ✅ do not crash the whole app
+      console.error("Notifications subscription error:", e);
+      return;
+    }
   }, [userId, onNotify]);
 }
