@@ -33,6 +33,9 @@ export default function AppPage() {
     () => categories.find((c) => c.id === activeCategoryId) ?? null,
     [categories, activeCategoryId]
   );
+  useNearbySimilarNotifications(userId, (n) => {
+  console.log("NEW NOTIFICATION:", n);});
+
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -43,9 +46,7 @@ export default function AppPage() {
       }
       setUserId(uid);
     });
-    
-  useNearbySimilarNotifications(userId, (n) => {
-  console.log("NEW NOTIFICATION:", n);});
+
 
 
 
